@@ -50,6 +50,8 @@ function mountClassComponent(vdom){
     let {type,props} = vdom
     let classInstance = new type(props)
     let renderVdom = classInstance.render()
+    // 在第一次挂载类组件的时候，让类组件的实例上新增一个oldrenderVdom属性
+    classInstance.oldRenderVdom = renderVdom
     return createDOM(renderVdom)
 
 }
@@ -75,7 +77,13 @@ function updateProps(dom,oldProps,newProps){
             for(let attr in styleObj){
                 dom.style[attr] = styleObj[attr]
             }
-        }else{
+        }else if(key.startsWith('on')){
+            // key.startWith('on) 也可以换成正则 /^on[A-Z].*/.test(key)
+            console.log('newProps',newProps);
+            // 绑定事件，属性是以on开头的
+            dom[key.toLocaleLowerCase()] = newProps[key]
+
+        } else{
             dom[key] = newProps[key]
         }
     }
@@ -84,6 +92,19 @@ function updateProps(dom,oldProps,newProps){
             dom[key] = null
         }
     }
+}
+
+/***
+ * parentDom:父容器
+ * oldVdom:老的虚拟dom
+ * newVdom:新的虚拟dom
+ */
+// 比较新旧虚拟dom进行更新
+export function compareTwoVdom(parentDom,oldVdom,newVdom){
+    // 使用createDom方法获取新的真实dom
+    let newDom = createDOM(newVdom)
+    // 父容器替换真实dom，暂时先不考虑domdiff
+    parentDom.replaceChild(newDom,oldVdom.dom)
 }
 
 const ReactDOM = {

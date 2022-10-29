@@ -17,13 +17,30 @@ function FunCom(props){
 
 class ClassComponent extends React.Component{
     render(){
-        return <div className='title' style={{color:'#bfa'}}>Hello{props.name}</div>
+        return <div className='title' style={{color:'#bfa'}}>Hello{this.props.name}</div>
+    }
+}
+
+class Counter extends React.Component{
+    constructor(props){
+        super(props)
+        this.state = {number:0}
+    }
+    handleAdd = () => {
+        debugger
+        this.setState({number:100})
+    }
+    render(){
+        return <div>
+            <p>{this.state.number}</p>
+            <button onClick={this.handleAdd}>修改</button>
+        </div>
     }
 }
 
 let element = <FunCom name="afu"/>
 
-let element2 = <ClassComponent name='afu'/>
+let element2 = <Counter/>
 
 // 函数式组件，就是一个普通函数，返回一个组件
 // 接收一个props作为参数，返回一个react元素 

@@ -1,6 +1,6 @@
 import { REACT_ELEMENT} from './content'
 import { wrapToVdom } from './utils';
-import { Component } from './component';
+import Component  from './component';
 
 // 创建虚拟dom的方法
 function createElement(type,config,children){
