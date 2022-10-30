@@ -29,7 +29,11 @@ function dispatchEvent(event) {
         let { store } = target // target 就是那个dom
         let handler = store && store[eventType] // 根据函数名，从之前保存在store中的函数中取出函数
         handler && handler(syntheticEvent) // 执行这个函数，完成对应的事件
-        target = target.parentNode   // 向上冒泡给父节点
+        if(syntheticEvent.isPropagationStopped){
+            break
+        }else{
+        target = target.parentNode   // 向上冒泡给父节点            
+        }
     }
 
     // let { store } = target // target 就是那个dom
@@ -49,6 +53,9 @@ function createSyntheticEvent(nativeEvent) {
     }
     syntheticEvent.nativeEvent = nativeEvent
     syntheticEvent.preventDefault = preventDefault
+    syntheticEvent.stopPropagation = stopPropagation
+    syntheticEvent.isDefaultPrevented = false
+    syntheticEvent.isPropagationStopped = false
     return syntheticEvent
 }
 
@@ -60,5 +67,15 @@ function preventDefault(event) {
     if (event.preventDefault) {
         event.preventDefault()
     }
+    this.isDefaultPrevented = true
+}
+function stopPropagation(event){
+    const evevt = this.nativeEvent
+    if(event.stopPropagation){
+        event.stopPropagation()
+    }else{
+        event.cancelBubble = true
+    }
+    this.isPropagationStopped = true
 }
 

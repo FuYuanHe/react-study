@@ -11,44 +11,70 @@ import ReactDOM from './react-dom';
 
 // console.log(element);
 
-function FunCom(props){
-    return <div className='title' style={{color:'#bfa'}}>Hello{props.name}</div>
-}
+// function FunCom(props){
+//     return <div className='title' style={{color:'#bfa'}}>Hello{props.name}</div>
+// }
 
-class ClassComponent extends React.Component{
-    render(){
-        return <div className='title' style={{color:'#bfa'}}>Hello{this.props.name}</div>
-    }
-}
+// class ClassComponent extends React.Component{
+//     render(){
+//         return <div className='title' style={{color:'#bfa'}}>Hello{this.props.name}</div>
+//     }
+// }
+
+// class Counter extends React.Component{
+//     constructor(props){
+//         super(props)
+//         this.state = {number:0}
+//     }
+//     handleAdd = () => {
+//         this.setState({number:this.state.number+1})
+//         console.log(this.state.number);
+//         this.setState({number:this.state.number+1})
+//         console.log(this.state.number);
+//         setTimeout(()=>{
+//             this.setState({number:this.state.number+1})
+//             console.log(this.state.number);
+//             this.setState({number:this.state.number+1})
+//             console.log(this.state.number);
+//         },0)
+
+//     }
+//     render(){
+//         return <div>
+//             <p>{this.state.number}</p>
+//             <button onClick={this.handleAdd}>修改</button>
+//         </div>
+//     }
+// }
 
 class Counter extends React.Component{
     constructor(props){
         super(props)
-        this.state = {number:0}
+        this.a = React.createRef() 
+        this.b = React.createRef() 
+        this.result = React.createRef() 
     }
     handleAdd = () => {
-        debugger
-        this.setState({number:this.state.number+1})
-        console.log(this.state.number);
-        this.setState({number:this.state.number+1})
-        console.log(this.state.number);
-        setTimeout(()=>{
-            this.setState({number:this.state.number+1})
-            console.log(this.state.number);
-            this.setState({number:this.state.number+1})
-            console.log(this.state.number);
-        },0)
-
+        let v1 = this.a.current.value
+        let v2 = this.b.current.value
+        console.log('v1',v1);
+        console.log('v2',v2);
+        this.result.current.value = Number(v1)+Number(v2)
     }
+
     render(){
-        return <div>
-            <p>{this.state.number}</p>
-            <button onClick={this.handleAdd}>修改</button>
-        </div>
+        return (
+            <div>
+                <input ref={this.a}/>+
+                <input ref={this.b}/>
+                <button onClick={this.handleAdd}>=</button>
+                <input ref={this.result}></input>
+            </div>
+        )
     }
 }
 
-let element = <FunCom name="afu"/>
+// let element = <FunCom name="afu"/>
 
 let element2 = <Counter/>
 

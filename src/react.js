@@ -29,8 +29,16 @@ function createElement(type,config,children){
     }
 }
 
+// createRef方法
+function createRef(){
+    return{
+        current:null
+    }
+}
+
 const react = {
     createElement,
+    createRef,
     Component
 }
 

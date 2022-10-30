@@ -17,7 +17,7 @@ function mount(vdom,parentDom){
 
 // 将虚拟dom变成真实dom
 function createDOM(vdom){
-    let {type,props} = vdom
+    let {type,props,ref} = vdom
     let dom
     if(type === REACT_TEXT){
         dom = document.createTextNode(props.content)
@@ -41,7 +41,11 @@ function createDOM(vdom){
             reconcileChildren(children,dom)
         }
     }
+    if(ref){
+    ref.current = dom        
+    }
     vdom.dom = dom
+    console.log(ref);
     return dom
 }
 
@@ -84,7 +88,6 @@ function updateProps(dom,oldProps,newProps){
             // 绑定事件，属性是以on开头的
             // dom[key.toLocaleLowerCase()] = newProps[key]
             // 使用添加事件的函数来处理更新事件
-            debugger
             addEvent(dom,key.toLocaleLowerCase(),newProps[key])
         } else{
             dom[key] = newProps[key]
