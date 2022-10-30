@@ -1,4 +1,5 @@
 import { REACT_TEXT } from "./content"
+import { addEvent } from "./event";
 
 
 
@@ -9,7 +10,7 @@ function render(vdom,container){
 function mount(vdom,parentDom){
     // 返回真实dom
     let newDom = createDOM(vdom)
-    console.log('newdom',newDom);
+    // console.log('newdom',newDom);
     // 将真实dom插入容器
     parentDom.appendChild(newDom)
 }
@@ -79,10 +80,12 @@ function updateProps(dom,oldProps,newProps){
             }
         }else if(key.startsWith('on')){
             // key.startWith('on) 也可以换成正则 /^on[A-Z].*/.test(key)
-            console.log('newProps',newProps);
+            // console.log('newProps',newProps);
             // 绑定事件，属性是以on开头的
-            dom[key.toLocaleLowerCase()] = newProps[key]
-
+            // dom[key.toLocaleLowerCase()] = newProps[key]
+            // 使用添加事件的函数来处理更新事件
+            debugger
+            addEvent(dom,key.toLocaleLowerCase(),newProps[key])
         } else{
             dom[key] = newProps[key]
         }

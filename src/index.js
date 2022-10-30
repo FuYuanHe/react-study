@@ -28,7 +28,17 @@ class Counter extends React.Component{
     }
     handleAdd = () => {
         debugger
-        this.setState({number:100})
+        this.setState({number:this.state.number+1})
+        console.log(this.state.number);
+        this.setState({number:this.state.number+1})
+        console.log(this.state.number);
+        setTimeout(()=>{
+            this.setState({number:this.state.number+1})
+            console.log(this.state.number);
+            this.setState({number:this.state.number+1})
+            console.log(this.state.number);
+        },0)
+
     }
     render(){
         return <div>
