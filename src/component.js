@@ -1,4 +1,4 @@
-import { compareTwoVdom } from './react-dom'
+import { compareTwoVdom, findDom } from './react-dom'
 
 // 更新队列
 export let updateQueue = {
@@ -86,7 +86,8 @@ class Component {
     }
     forceUpdate() {
         let oldRenderVdom = this.oldRenderVdom // 拿到老的虚拟dom
-        let oldDom = oldRenderVdom.dom  // 拿到老的真实dom
+        // 老的虚拟dom返回的有可能还是个组件，所以需要使用递归函数找到最深处的dom
+        let oldDom = findDom(oldRenderVdom)  // 拿到老的真实dom
         let newRenderDom = this.render() // 获取新的虚拟dom
         compareTwoVdom(oldDom.parentNode, oldRenderVdom, newRenderDom)
         // 更新实例身上的虚拟dom属性

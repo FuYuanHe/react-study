@@ -1,4 +1,4 @@
-import { REACT_ELEMENT} from './content'
+import { REACT_ELEMENT,REACT_FORWARD_REF} from './content'
 import { wrapToVdom } from './utils';
 import Component  from './component';
 
@@ -36,9 +36,18 @@ function createRef(){
     }
 }
 
+// 接收ref的函数组件
+function forwardRef(render){
+    return{
+        $$typeof:REACT_FORWARD_REF,
+        render
+    }
+}
+
 const react = {
     createElement,
     createRef,
+    forwardRef,
     Component
 }
 

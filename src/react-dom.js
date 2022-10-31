@@ -1,4 +1,4 @@
-import { REACT_TEXT } from "./content"
+import { REACT_TEXT,REACT_FORWARD_REF } from "./content"
 import { addEvent } from "./event";
 
 
@@ -19,6 +19,9 @@ function mount(vdom,parentDom){
 function createDOM(vdom){
     let {type,props,ref} = vdom
     let dom
+    if(type && type.$$typeof ===REACT_FORWARD_REF){
+        return mountForwardComponent(vdom)
+    }
     if(type === REACT_TEXT){
         dom = document.createTextNode(props.content)
     }else if(typeof type === 'function'){
@@ -45,18 +48,18 @@ function createDOM(vdom){
     ref.current = dom        
     }
     vdom.dom = dom
-    console.log(ref);
     return dom
 }
 
 // 挂载类组件
 function mountClassComponent(vdom){
     // type是类组件
-    let {type,props} = vdom
+    let {type,props,ref} = vdom
     let classInstance = new type(props)
+    if(ref)ref.current = classInstance
     let renderVdom = classInstance.render()
     // 在第一次挂载类组件的时候，让类组件的实例上新增一个oldrenderVdom属性
-    classInstance.oldRenderVdom = renderVdom
+    vdom.oldRenderVdom =  classInstance.oldRenderVdom = renderVdom
     return createDOM(renderVdom)
 
 }
@@ -64,7 +67,14 @@ function mountClassComponent(vdom){
 function mountFunctionComponent(vdom){
     let {type,props} = vdom // 结构
     let renderVdom =  type(props) // 执行type获取虚拟dom
+    vdom.oldRenderVdom = renderVdom
     return createDOM(renderVdom) // 继续获取真实dom
+}
+
+function mountForwardComponent(vdom){
+    let {type:{render},ref,props} = vdom
+    let renderVdom = render(props,ref)
+    return createDOM(renderVdom)
 }
 
 // 处理子节点
@@ -109,8 +119,21 @@ function updateProps(dom,oldProps,newProps){
 export function compareTwoVdom(parentDom,oldVdom,newVdom){
     // 使用createDom方法获取新的真实dom
     let newDom = createDOM(newVdom)
+    let oldDom = findDom(oldVdom)
     // 父容器替换真实dom，暂时先不考虑domdiff
-    parentDom.replaceChild(newDom,oldVdom.dom)
+    parentDom.replaceChild(newDom,oldDom)
+}
+
+// 递归查找dom属性，因为组件嵌套，有可能无法一次拿到dom属性
+export function findDom(vdom){
+    if(!vdom)return null
+    // 如果有dom属性，就直接返回
+    if(vdom.dom){
+        return vdom.dom
+    }else{
+        // 如果没有，
+        return findDom(vdom.oldRenderVdom)
+    }
 }
 
 const ReactDOM = {
