@@ -37,10 +37,10 @@ class Updater {
     }
     // 更新组件
     updateComponent() {
-        let { classInstance, pendingStates } = this
+        let { classInstance,nextProps, pendingStates } = this
         if (pendingStates.length > 0) {
             // 如果等待更新的数组有内容，表示需要更新
-            shouldUpdate(classInstance, this.getState())
+            shouldUpdate(classInstance,nextProps, this.getState())
         }
     }
     // 获取state的方法
@@ -63,9 +63,21 @@ class Updater {
     }
 }
 
-function shouldUpdate(classInstance, nextState) {
-    classInstance.state = nextState
-    classInstance.forceUpdate()
+function shouldUpdate(classInstance, nextProps,nextState) {
+    let {shouldComponentUpdate,componentWillUpdate} = classInstance
+    let willUpdate =true
+    if(shouldComponentUpdate && !shouldComponentUpdate(nextProps,nextState)){
+        willUpdate = false
+    }
+    if(willUpdate && componentWillUpdate){
+        componentWillUpdate()
+    }
+    classInstance.state = nextState  //不管是否更新，都会赋值
+    if(willUpdate){// 更新就更新页面，苟泽
+        classInstance.forceUpdate()
+    }
+//     classInstance.state = nextState
+//     classInstance.forceUpdate()
 }
 
 
@@ -92,6 +104,9 @@ class Component {
         compareTwoVdom(oldDom.parentNode, oldRenderVdom, newRenderDom)
         // 更新实例身上的虚拟dom属性
         this.oldRenderVdom = newRenderDom
+        if(this.componentDidUpdate){
+            this.componentDidUpdate(this.props,this.state)
+        }
     }
 }
 

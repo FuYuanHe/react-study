@@ -13,6 +13,10 @@ function mount(vdom,parentDom){
     // console.log('newdom',newDom);
     // 将真实dom插入容器
     parentDom.appendChild(newDom)
+    // 将组件挂载的钩子放在这里
+    if(newDom.componentDidMount){
+        newDom.componentDidMount()
+    }
 }
 
 // 将虚拟dom变成真实dom
@@ -57,10 +61,17 @@ function mountClassComponent(vdom){
     let {type,props,ref} = vdom
     let classInstance = new type(props)
     if(ref)ref.current = classInstance
+    if(classInstance.componentWillMount){
+        classInstance.componentWillMount()
+    }
     let renderVdom = classInstance.render()
     // 在第一次挂载类组件的时候，让类组件的实例上新增一个oldrenderVdom属性
     vdom.oldRenderVdom =  classInstance.oldRenderVdom = renderVdom
-    return createDOM(renderVdom)
+    let dom = createDOM(renderVdom)
+    if(classInstance.componentDidMount){
+        dom.componentDidMount = classInstance.componentDidMount
+    }
+    return dom
 
 }
 // 挂载函数组件
