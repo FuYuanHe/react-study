@@ -18,6 +18,7 @@ class Updater {
     constructor(classInstance) {
         this.classInstance = classInstance // 实例
         this.pendingStates = [] // 缓存队列
+        // this.nextProps = null
     }
     addState(partialSatte) {
         // 放入队列先缓存起来
@@ -25,7 +26,8 @@ class Updater {
         this.emitUpdate()
     }
     // 发射更新
-    emitUpdate() {
+    emitUpdate(newProps) {
+        this.nextProps = newProps
         // 需要先判断是否是批量更新模式
         if (updateQueue.isBatchingUpdate) {
             // 异步更新
@@ -38,7 +40,8 @@ class Updater {
     // 更新组件
     updateComponent() {
         let { classInstance,nextProps, pendingStates } = this
-        if (pendingStates.length > 0) {
+        // 如果属性更新了或状态更新了，都会走更新逻辑
+        if (pendingStates.length > 0 || nextProps) {
             // 如果等待更新的数组有内容，表示需要更新
             shouldUpdate(classInstance,nextProps, this.getState())
         }
@@ -71,6 +74,10 @@ function shouldUpdate(classInstance, nextProps,nextState) {
     }
     if(willUpdate && componentWillUpdate){
         componentWillUpdate()
+    }
+    // 如果nextProps有值，就给实例的props属性赋上新值
+    if(nextProps){
+        classInstance.props = nextProps
     }
     classInstance.state = nextState  //不管是否更新，都会赋值
     if(willUpdate){// 更新就更新页面，苟泽

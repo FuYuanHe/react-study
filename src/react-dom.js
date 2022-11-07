@@ -42,7 +42,9 @@ function createDOM(vdom) {
         let children = props.children
         // 如果children是一个react元素,也是一个虚拟dom
         if (typeof children === 'object' && children.type) {
+            // 增加一个属性index
             // 直接把这个虚拟dom挂载在dom上
+            children.mountIndex = 0
             mount(children, dom)
         } else if (Array.isArray(children)) {
             reconcileChildren(children, dom)
@@ -92,7 +94,11 @@ function mountForwardComponent(vdom) {
 
 // 处理子节点
 function reconcileChildren(children, parentDom) {
-    children.forEach(child => mount(child, parentDom))
+    // 给节点增加一个属性index
+    children.forEach((child,index) =>{ 
+        child.mountIndex = index
+        mount(child, parentDom)
+    })
 }
 // 整理props 
 function updateProps(dom, oldProps, newProps) {
@@ -153,7 +159,7 @@ export function compareTwoVdom(parentDom, oldVdom, newVdom, nextDom) {
             unMountVdom(oldVdom)
             mountNewVdom(parentDom, newVdom, nextDom)
         } else {
-            // 深度DOMdiff
+            // 深度DOMdiff 复用当前节点
             updateElement(parentDom, oldVdom, newVdom, nextDom)
         }
     }
@@ -161,7 +167,52 @@ export function compareTwoVdom(parentDom, oldVdom, newVdom, nextDom) {
 
 // 深度domdiff 方法
 function updateElement(parentDom,oldVdom,newVdom,nextDom){
-    
+    // 如果是文本节点
+    if(oldVdom.type === REACT_TEXT){
+        // 拿到老的真实dom，赋值给新的虚拟dom的dom属性，并将新的真实dom的值改为要修改的值
+        let currentDom = newVdom.dom = findDom(oldVdom)
+        currentDom.textContent = newVdom.props.content
+    }else if(typeof oldVdom.type === 'string'){
+        // 如果是字符串
+        let currentDom = newVdom.dom = findDom(oldVdom)
+        updateProps(currentDom,oldVdom.props,newVdom.props)
+        updateChildren(currentDom,oldVdom.props.children,newVdom.props.children)
+    }else if(typeof oldVdom.type === 'function'){
+        // 如果是类组件或者函数组件
+        if(oldVdom.type.isReactComponent){
+            newVdom.classInstance = oldVdom.classInstance
+            updateClassComponent()
+        }else{
+            updateFunctionComponent(oldVdom,newVdom)
+        }
+    }
+}
+
+// 更新类组件
+function updateClassComponent(oldVdom,newVdom){
+    let classInstance = newVdom.classInstance = oldVdom.classInstance
+    if(classInstance.componentWillReceiveProps){
+        classInstance.componentWillReceiveProps(newVdom.props)
+    }
+    classInstance.updater.emitUpdate(newVdom.props)
+}
+function updateFunctionComponent(oldVdom,newVdom){
+    let parentDom = findDom(oldVdom).parentNode
+    let {type ,props} = newVdom
+    let newRenderVdom = type(props)
+    newVdom.oldRenderVdom = newRenderVdom
+    compareTwoVdom(parentDom,oldVdom.oldRenderVdom,newRenderVdom)
+}
+
+function updateChildren(currentDom,oldChildren,newChildren){
+    // 先判断这两是不是数组，不是数组就变成数组
+    oldChildren = Array.isArray(oldChildren)?oldChildren:[oldChildren]
+    newChildren = Array.isArray(newChildren)?oldChildren:[newChildren]
+    let maxLength = Math.max(oldChildren.length,newChildren.length)
+    for(let i = 0;i<maxLength;i++){
+        let nextVdom = oldChildren.find((item,index)=> {index > i && item && findDom(item)})
+        compareTwoVdom(currentDom,oldChildren[i],newChildren[i],nextVdom&&findDom(nextVdom))
+    }
 }
 
 // 加载新节点
