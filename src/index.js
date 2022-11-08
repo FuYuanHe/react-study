@@ -86,23 +86,47 @@ import ReactDOM from './react-dom';
 //         return <input ref={this.input}></input>
 //     }
 // }
-function TsetInput(props,ref){
-    return <input ref={ref}/>
-}
-const ForwardTestInput = React.forwardRef(TsetInput)
+// function TsetInput(props,ref){
+//     return <input ref={ref}/>
+// }
+// const ForwardTestInput = React.forwardRef(TsetInput)
+// class Counter extends React.Component{
+//     constructor(props){
+//         super(props)
+//         this.input = React.createRef()
+//     }
+//     getFocus = () => {
+//         this.input.current.focus()
+//     }
+//     render(){
+//         return (
+//             <div>
+//                 <ForwardTestInput ref={this.input} />
+//                 <button onClick={this.getFocus}>获取焦点</button>
+//             </div>
+//         )
+//     }
+// }
+
 class Counter extends React.Component{
     constructor(props){
         super(props)
-        this.input = React.createRef()
+        this.state = {list:['A','B','C','D','E','F']}
     }
-    getFocus = () => {
-        this.input.current.focus()
+    handleClick = () => {
+        this.setState({
+            list:['A','C','E','B','G']
+        })
     }
     render(){
-        return (
+        return(
             <div>
-                <ForwardTestInput ref={this.input} />
-                <button onClick={this.getFocus}>获取焦点</button>
+                <ul>
+                    {
+                        this.state.list.map(item => <li key={item}>{item}</li>)
+                    }
+                </ul>
+                <button onClick={this.handleClick}>+</button>
             </div>
         )
     }

@@ -108,6 +108,8 @@ class Component {
         // 老的虚拟dom返回的有可能还是个组件，所以需要使用递归函数找到最深处的dom
         let oldDom = findDom(oldRenderVdom)  // 拿到老的真实dom
         let newRenderDom = this.render() // 获取新的虚拟dom
+        console.log('oldRenderDom',oldRenderVdom);
+        console.log('newRenderDom',newRenderDom);
         compareTwoVdom(oldDom.parentNode, oldRenderVdom, newRenderDom)
         // 更新实例身上的虚拟dom属性
         this.oldRenderVdom = newRenderDom

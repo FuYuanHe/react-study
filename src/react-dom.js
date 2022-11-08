@@ -1,4 +1,4 @@
-import { REACT_TEXT, REACT_FORWARD_REF } from "./content"
+import { REACT_TEXT, REACT_FORWARD_REF,MOVE,PLACEMENT } from "./content"
 import { addEvent } from "./event";
 
 
@@ -160,13 +160,13 @@ export function compareTwoVdom(parentDom, oldVdom, newVdom, nextDom) {
             mountNewVdom(parentDom, newVdom, nextDom)
         } else {
             // 深度DOMdiff 复用当前节点
-            updateElement(parentDom, oldVdom, newVdom, nextDom)
+            updateElement(oldVdom, newVdom)
         }
     }
 }
 
 // 深度domdiff 方法
-function updateElement(parentDom,oldVdom,newVdom,nextDom){
+function updateElement(oldVdom,newVdom){
     // 如果是文本节点
     if(oldVdom.type === REACT_TEXT){
         // 拿到老的真实dom，赋值给新的虚拟dom的dom属性，并将新的真实dom的值改为要修改的值
@@ -181,7 +181,7 @@ function updateElement(parentDom,oldVdom,newVdom,nextDom){
         // 如果是类组件或者函数组件
         if(oldVdom.type.isReactComponent){
             newVdom.classInstance = oldVdom.classInstance
-            updateClassComponent()
+            updateClassComponent(oldVdom,newVdom)
         }else{
             updateFunctionComponent(oldVdom,newVdom)
         }
@@ -196,6 +196,7 @@ function updateClassComponent(oldVdom,newVdom){
     }
     classInstance.updater.emitUpdate(newVdom.props)
 }
+// 更新函数组件
 function updateFunctionComponent(oldVdom,newVdom){
     let parentDom = findDom(oldVdom).parentNode
     let {type ,props} = newVdom
@@ -204,15 +205,89 @@ function updateFunctionComponent(oldVdom,newVdom){
     compareTwoVdom(parentDom,oldVdom.oldRenderVdom,newRenderVdom)
 }
 
-function updateChildren(currentDom,oldChildren,newChildren){
+// 完整的dom different对比方法
+function updateChildren(parentDom,oldChildren,newChildren){
+    // debugger
     // 先判断这两是不是数组，不是数组就变成数组
     oldChildren = Array.isArray(oldChildren)?oldChildren:[oldChildren]
-    newChildren = Array.isArray(newChildren)?oldChildren:[newChildren]
-    let maxLength = Math.max(oldChildren.length,newChildren.length)
-    for(let i = 0;i<maxLength;i++){
-        let nextVdom = oldChildren.find((item,index)=> {index > i && item && findDom(item)})
-        compareTwoVdom(currentDom,oldChildren[i],newChildren[i],nextVdom&&findDom(nextVdom))
-    }
+    newChildren = Array.isArray(newChildren)?newChildren:[newChildren]
+    // 旧的对比方式，全量更新
+    // let maxLength = Math.max(oldChildren.length,newChildren.length)
+    // for(let i = 0;i<maxLength;i++){
+    //     let nextVdom = oldChildren.find((item,index)=> {index > i && item && findDom(item)})
+    //     compareTwoVdom(currentDom,oldChildren[i],newChildren[i],nextVdom&&findDom(nextVdom))
+    // }
+    // 构建老的map
+    let oldKeyMap = {}
+    oldChildren.forEach((oldVChild,index)=>{
+        // key一般是唯一的，不然就是index
+        let oldKey = oldVChild.key? oldVChild.key : index
+        // 把老的儿子数组中的数据映射到map上
+        oldKeyMap[oldKey] = oldVChild
+    })
+    // 定义一个存放需要删除和移动位置的子元素的数组
+    let patch = []
+    // 定义最后一个不需要修改的元素的索引
+    let lastPlactIndex = 0
+    newChildren.forEach((newVChild,index)=>{
+        newVChild.mountIndex = index
+        let newKey = newVChild.key? newVChild.key : index
+        // 拿新的key到旧的map中去找对应的值
+        let oldVChild = oldKeyMap[newKey]
+        // 如果真的取到这个节点，可以复用节点
+        if(oldVChild){
+            // 先更新元素
+            updateElement(oldVChild,newVChild)
+            // 需要移动 ,可能这里的判断还有点迷糊
+            if(oldVChild.mountIndex < lastPlactIndex){
+                patch.push({
+                    type:MOVE,
+                    oldVChild,
+                    newVChild,
+                    mountIndex:index
+                })
+            }
+            // 删掉刚才记录的这个元素
+            delete oldKeyMap[newKey]
+            lastPlactIndex = Math.max(oldVChild.mountIndex,lastPlactIndex)
+        }else{
+            // 插入一个新的元素
+            patch.push({
+                type:PLACEMENT,
+                newVChild,
+                mountIndex:index
+            })
+        }
+    })
+    // 获取需要移动的元素
+    let moveChildren = patch.filter(action => action.type === MOVE).map(action => action.oldVChild)
+    // 删除oldKeyMap中的所有留存的元素，这些元素没有被复用
+    Object.values(oldKeyMap).concat(moveChildren).forEach(oldVChild =>{
+        let currentDom = findDom(oldVChild)
+        parentDom.removeChild(currentDom)
+    })
+    patch.forEach(action => {
+        let {type,oldVChild,newVChild,mountIndex} = action
+        let childNodes = parentDom.childNodes
+        if(type === PLACEMENT){
+            let newDom = createDOM(newVChild)
+            let childNode = childNodes[mountIndex]
+            if(childNode){
+                parentDom.idsertBefore(newDom,childNode)
+            }else{
+                parentDom.appendChild(newDom)
+            }
+        }else if(type === MOVE){
+            // 复用节点
+            let oldDom = findDom(oldVChild)
+            let childNode = childNodes[mountIndex]
+            if(childNode){
+                parentDom.insertBefore(oldDom,childNode)
+            }else{
+                parentDom.appendChild(oldDom)
+            }
+        }
+    })
 }
 
 // 加载新节点
