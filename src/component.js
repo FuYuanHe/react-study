@@ -107,14 +107,22 @@ class Component {
         let oldRenderVdom = this.oldRenderVdom // 拿到老的虚拟dom
         // 老的虚拟dom返回的有可能还是个组件，所以需要使用递归函数找到最深处的dom
         let oldDom = findDom(oldRenderVdom)  // 拿到老的真实dom
+        // 新的生命周期函数
+        if(this.constructor.getDerivedStateFromProps){
+            let newState = this.constructor.getDerivedStateFromProps(this.state,this.props)
+            // 可能会返回新的state
+            if(newState){
+                this.state = {...this.state,...newState}
+            }
+        }
         let newRenderDom = this.render() // 获取新的虚拟dom
-        console.log('oldRenderDom',oldRenderVdom);
-        console.log('newRenderDom',newRenderDom);
+        // 更新快照,可能有，会是一个对象
+        let snapshot = this.getSnapshotBeforeUpdate && this.getSnapshotBeforeUpdate()
         compareTwoVdom(oldDom.parentNode, oldRenderVdom, newRenderDom)
         // 更新实例身上的虚拟dom属性
         this.oldRenderVdom = newRenderDom
         if(this.componentDidUpdate){
-            this.componentDidUpdate(this.props,this.state)
+            this.componentDidUpdate(this.props,this.state,snapshot)
         }
     }
 }

@@ -1,5 +1,5 @@
-import React from './react'
-import ReactDOM from './react-dom';
+import React from 'react'
+import ReactDOM from 'react-dom';
 
 
 // const element = React.createElement('h1',{
@@ -108,26 +108,75 @@ import ReactDOM from './react-dom';
 //     }
 // }
 
+// class Counter extends React.Component{
+//     constructor(props){
+//         super(props)
+//         this.state = {list:['A','B','C','D','E','F']}
+//     }
+//     handleClick = () => {
+//         this.setState({
+//             list:['A','C','E','B','G']
+//         })
+//     }
+//     render(){
+//         return(
+//             <div>
+//                 <ul>
+//                     {
+//                         this.state.list.map(item => <li key={item}>{item}</li>)
+//                     }
+//                 </ul>
+//                 <button onClick={this.handleClick}>+</button>
+//             </div>
+//         )
+//     }
+// }
+let ThemeContext = React.createContext()
 class Counter extends React.Component{
     constructor(props){
         super(props)
-        this.state = {list:['A','B','C','D','E','F']}
+        this.state = {color:'red'}
     }
-    handleClick = () => {
-        this.setState({
-            list:['A','C','E','B','G']
-        })
+    changeColor = (color)=>{
+        this.setState({color})
     }
     render(){
+        let contextVal = {changeColor:this.changeColor,color:this.state.color}
+        return (
+            <ThemeContext.Provider value={contextVal}>
+                <div style = {{margin:'10px',padding:'10px',border:`5px solid ${this.state.color}`,width:'400px'}}>
+                    这里是内容
+                    <Page/>
+                    <Main/>
+                </div>                
+            </ThemeContext.Provider>
+        )
+    }
+}
+class Page extends React.Component{
+    static contextType = ThemeContext
+    render(){
         return(
-            <div>
-                <ul>
-                    {
-                        this.state.list.map(item => <li key={item}>{item}</li>)
-                    }
-                </ul>
-                <button onClick={this.handleClick}>+</button>
+            <div style = {{margin:'10px',padding:'10px',border:`5px solid ${this.context.color}`,width:'200px'}}>
+                我是首页内容
+                <button onClick={()=>this.context.changeColor('green')}>改颜色</button>
             </div>
+        )
+    }
+}
+class Main extends React.Component{
+    render(){
+        return(
+            <ThemeContext.Consumer>
+                {
+                    (value) => (
+                        <div style = {{margin:'10px',padding:'10px',border:`5px solid ${value.color}`,width:'200px'}}>
+                            我是主体内容
+                            <button onClick={()=>value.changeColor('blue')}>改颜色</button>
+                        </div>
+                    )
+                }
+            </ThemeContext.Consumer>
         )
     }
 }
