@@ -107,6 +107,10 @@ class Component {
         let oldRenderVdom = this.oldRenderVdom // 拿到老的虚拟dom
         // 老的虚拟dom返回的有可能还是个组件，所以需要使用递归函数找到最深处的dom
         let oldDom = findDom(oldRenderVdom)  // 拿到老的真实dom
+        // 在这里加入判断是否有contextType
+        if(this.constructor.contextType){
+            this.context = this.constructor.contextType._currentValue
+        }
         // 新的生命周期函数
         if(this.constructor.getDerivedStateFromProps){
             let newState = this.constructor.getDerivedStateFromProps(this.state,this.props)
