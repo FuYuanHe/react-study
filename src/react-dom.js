@@ -60,6 +60,7 @@ function createDOM(vdom) {
     return dom
 }
 
+// 挂载provider
 function mountProviderComponent(vdom){
     const {type,props} = vdom
     let context = type._context
@@ -68,6 +69,7 @@ function mountProviderComponent(vdom){
     vdom.oldRenderVdom = renderVdom
     return createDOM(renderVdom)
 }
+// 挂载constumer
 function mountContextComponent(vdom){
     const {type,props} = vdom
     let context = type._context

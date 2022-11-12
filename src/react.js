@@ -60,9 +60,19 @@ function createContext(){
     }
     return context
 }
+function cloneElement(oldElement,props,children){
+    if(arguments.length >3){
+        // 说明有多个children
+        props.children = Array.prototype.slice.call(arguments,2).map(wrapToVdom)
+    }else if(arguments.length === 3){
+        props.children = wrapToVdom(children)
+    }
+    return {...oldElement,props}
+}
 
 const react = {
     createElement,
+    cloneElement,
     createRef,
     createContext,
     forwardRef,

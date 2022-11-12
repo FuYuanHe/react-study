@@ -132,47 +132,47 @@ import ReactDOM from './react-dom';
 //     }
 // }
 let ThemeContext = React.createContext()
-class Counter extends React.Component{
-    constructor(props){
+class Counter extends React.Component {
+    constructor(props) {
         super(props)
-        this.state = {color:'red'}
+        this.state = { color: 'red' }
     }
-    changeColor = (color)=>{
-        this.setState({color})
+    changeColor = (color) => {
+        this.setState({ color })
     }
-    render(){
-        let contextVal = {changeColor:this.changeColor,color:this.state.color}
+    render() {
+        let contextVal = { changeColor: this.changeColor, color: this.state.color }
         return (
             <ThemeContext.Provider value={contextVal}>
-                <div style = {{margin:'10px',padding:'10px',border:`5px solid ${this.state.color}`,width:'400px'}}>
+                <div style={{ margin: '10px', padding: '10px', border: `5px solid ${this.state.color}`, width: '400px' }}>
                     这里是内容
-                    <Page/>
-                    <Main/>
-                </div>                
+                    <Page />
+                    <Main />
+                </div>
             </ThemeContext.Provider>
         )
     }
 }
-class Page extends React.Component{
+class Page extends React.Component {
     static contextType = ThemeContext
-    render(){
-        return(
-            <div style = {{margin:'10px',padding:'10px',border:`5px solid ${this.context.color}`,width:'200px'}}>
+    render() {
+        return (
+            <div style={{ margin: '10px', padding: '10px', border: `5px solid ${this.context.color}`, width: '200px' }}>
                 我是首页内容
-                <button onClick={()=>this.context.changeColor('green')}>改颜色</button>
+                <button onClick={() => this.context.changeColor('green')}>改颜色</button>
             </div>
         )
     }
 }
-class Main extends React.Component{
-    render(){
-        return(
+class Main extends React.Component {
+    render() {
+        return (
             <ThemeContext.Consumer>
                 {
                     (value) => (
-                        <div style = {{margin:'10px',padding:'10px',border:`5px solid ${value.color}`,width:'200px'}}>
+                        <div style={{ margin: '10px', padding: '10px', border: `5px solid ${value.color}`, width: '200px' }}>
                             我是主体内容
-                            <button onClick={()=>value.changeColor('blue')}>改颜色</button>
+                            <button onClick={() => value.changeColor('blue')}>改颜色</button>
                         </div>
                     )
                 }
@@ -181,12 +181,64 @@ class Main extends React.Component{
     }
 }
 
+class MouseTracker extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = { x: 0, y: 0 }
+    }
+    handleMouseMove = (event) => {
+        this.setState({
+            x: event.clientX,
+            y: event.clientY
+        })
+    }
+    render() {
+        return (
+            <div onMouseMove={this.handleMouseMove}>
+                {this.props.render(this.state)}
+            </div>
+        )
+    }
+}
+
+
+function wrapMouseTracker(OldComponent) {
+    return class extends React.Component {
+        constructor(props) {
+            super(props)
+            this.state = { x: 0, y: 0 }
+        }
+        handleMouseMove = (event) => {
+            this.setState({
+                x: event.clientX,
+                y: event.clientY
+            })
+        }
+        render() {
+            return (
+                <div onMouseMove={this.handleMouseMove}>
+                    <OldComponent {...this.state}/>
+                    {/* {this.props.render(this.state)} */}
+                </div>
+            )
+        }
+    }
+}
+function showTracker(props){
+    return (
+       <div>
+            <h1>请移动鼠标</h1>
+            <p>当前的鼠标位置是{props.x}和{props.y}</p>
+        </div> 
+    )
+} 
+let ShowComponent = wrapMouseTracker(showTracker)
 // let element = <FunCom name="afu"/>
 
-let element2 = <Counter/>
+let element2 = <Counter />
 
 // 函数式组件，就是一个普通函数，返回一个组件
 // 接收一个props作为参数，返回一个react元素 
 
 // 将虚拟dom变成真实dom
-ReactDOM.render(element2,document.getElementById('root'))
+ReactDOM.render(<ShowComponent />, document.getElementById('root'))
