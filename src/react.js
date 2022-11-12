@@ -1,5 +1,5 @@
-import { REACT_ELEMENT,REACT_FORWARD_REF,REACT_CONTEXT,REACT_PROVIDER} from './content'
-import { wrapToVdom } from './utils';
+import { REACT_ELEMENT,REACT_FORWARD_REF,REACT_CONTEXT,REACT_PROVIDER,REACT_MEMO} from './content'
+import { shallowEqual, wrapToVdom } from './utils';
 import Component  from './component';
 
 // 创建虚拟dom的方法
@@ -70,13 +70,33 @@ function cloneElement(oldElement,props,children){
     return {...oldElement,props}
 }
 
+// 函数组件的更新优化函数memo
+function memo(type,compare=shallowEqual){
+    return{
+        $$typeof:REACT_MEMO,
+        compare,
+        type
+    }
+
+}
+
+// PureComponent 类
+class PureComponent extends Component{
+    // 重写shouldComponentUpdate方法
+    shouldComponentUpdate(nextProps,nextState){
+        return !shallowEqual(this.props,nextProps) || !shallowEqual(this.state,nextState)
+    }
+}
+
 const react = {
     createElement,
     cloneElement,
     createRef,
     createContext,
     forwardRef,
-    Component
+    memo,
+    Component,
+    PureComponent
 }
 
 export default react

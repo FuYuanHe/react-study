@@ -1,4 +1,4 @@
-import { REACT_TEXT, REACT_FORWARD_REF, MOVE, PLACEMENT, REACT_CONTEXT, REACT_PROVIDER } from "./content"
+import { REACT_TEXT, REACT_FORWARD_REF, MOVE, PLACEMENT, REACT_CONTEXT, REACT_PROVIDER, REACT_MEMO } from "./content"
 import { addEvent } from "./event";
 
 
@@ -25,6 +25,8 @@ function createDOM(vdom) {
     let dom
     if (type && type.$$typeof === REACT_FORWARD_REF) {
         return mountForwardComponent(vdom)
+    }else if(type.$$typeof === REACT_MEMO){
+        return mountMemoComponent(vdom)
     } else if (type.$$typeof === REACT_CONTEXT) {
         return mountContextComponent(vdom)
     } else if (type.$$typeof === REACT_PROVIDER) {
@@ -58,6 +60,14 @@ function createDOM(vdom) {
     }
     vdom.dom = dom // 给虚拟dom身上加个dom属性
     return dom
+}
+
+function mountMemoComponent(vdom){
+    let {type,props} = vdom
+    let renderVdom = type.type(props)
+    vdom.prevProps = props // 记录之前的props进行对比
+    vdom.oldRenderVdom = renderVdom
+    return createDOM(renderVdom)
 }
 
 // 挂载provider
@@ -194,7 +204,9 @@ export function compareTwoVdom(parentDom, oldVdom, newVdom, nextDom) {
 // 深度domdiff 方法
 function updateElement(oldVdom, newVdom) {
     // 如果是文本节点
-    if(oldVdom.type.$$typeof === REACT_CONTEXT){
+    if(oldVdom.type.$$typeof === REACT_MEMO){
+        updateMemoComponent(oldVdom,newVdom)
+    }else if(oldVdom.type.$$typeof === REACT_CONTEXT){
         updateContextComponent(oldVdom,newVdom)
     }else if(oldVdom.type.$$typeof === REACT_PROVIDER) {
         updateProviderComponent(oldVdom,newVdom)
@@ -216,6 +228,27 @@ function updateElement(oldVdom, newVdom) {
             updateFunctionComponent(oldVdom, newVdom)
         }
     }
+}
+
+// 更新reactmemo
+function updateMemoComponent(oldVdom,newVdom){
+    let {type,prevProps} = oldVdom
+    // 对比新旧虚拟dom的props属性，使用浅对比函数，shallowEqual
+    if(!type.compare(prevProps,newVdom.props)){
+        // 新旧props不一样，走更新逻辑
+        let oldDom = findDom(oldVdom)
+        let parentDom = oldDom.parentNode
+        let {type,props} = newVdom
+        let renderVdom = type.type(props)
+        compareTwoVdom(parentDom,oldVdom.oldRenderVdom,renderVdom)
+        newVdom.oldRenderVdom = renderVdom
+        newVdom.prevProps = props
+    }else{
+        // 不更新，直接使用之前的虚拟dom
+        newVdom.prevProps = prevProps
+        newVdom.oldRenderVdom = oldVdom.oldRenderVdom
+    }
+
 }
 
 // 更新context
@@ -261,9 +294,9 @@ function updateFunctionComponent(oldVdom, newVdom) {
 // 完整的dom different对比方法
 function updateChildren(parentDom, oldChildren, newChildren) {
     // debugger
-    // 先判断这两是不是数组，不是数组就变成数组
-    oldChildren = Array.isArray(oldChildren) ? oldChildren : [oldChildren]
-    newChildren = Array.isArray(newChildren) ? newChildren : [newChildren]
+    // 先判断这两是不是数组，不是数组就变成数组,还要过滤一下为空的元素
+    oldChildren = (Array.isArray(oldChildren) ? oldChildren : [oldChildren]).filter(item => item)
+    newChildren = (Array.isArray(newChildren) ? newChildren : [newChildren]).filter(item => item)
     // 旧的对比方式，全量更新
     // let maxLength = Math.max(oldChildren.length,newChildren.length)
     // for(let i = 0;i<maxLength;i++){
