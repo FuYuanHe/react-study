@@ -1,6 +1,7 @@
 import { REACT_ELEMENT,REACT_FORWARD_REF,REACT_CONTEXT,REACT_PROVIDER,REACT_MEMO} from './content'
 import { shallowEqual, wrapToVdom } from './utils';
 import Component  from './component';
+import {useState} from './react-dom'
 
 // 创建虚拟dom的方法
 function createElement(type,config,children){
@@ -96,7 +97,9 @@ const react = {
     forwardRef,
     memo,
     Component,
-    PureComponent
+    PureComponent,
+    // hooks
+    useState,
 }
 
 export default react

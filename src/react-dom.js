@@ -2,19 +2,36 @@ import { REACT_TEXT, REACT_FORWARD_REF, MOVE, PLACEMENT, REACT_CONTEXT, REACT_PR
 import { addEvent } from "./event";
 
 
+let hookStates = [] // 存放所有的useState状态
+let hookIndex = 0 // 存放调用useState时的index
+let scheduleUpdate //更新调度函数
 
 function render(vdom, container) {
     mount(vdom, container)
+    scheduleUpdate = () => {
+        hookIndex = 0
+        compareTwoVdom(container,vdom,vdom)
+    }
+}
+export function useState(initialState){
+    hookStates[hookIndex] = hookStates[hookIndex] || initialState
+    let currentIndex = hookIndex
+    function setState(newState){
+        hookStates[currentIndex] = newState
+        scheduleUpdate()
+    }
+    return [hookStates[hookIndex++],setState]
 }
 
 function mount(vdom, parentDom) {
     // 返回真实dom
     let newDom = createDOM(vdom)
+    console.log('newdom',newDom);
     // console.log('newdom',newDom);
     // 将真实dom插入容器
-    parentDom.appendChild(newDom)
+    if(newDom) parentDom.appendChild(newDom)
     // 将组件挂载的钩子放在这里
-    if (newDom.componentDidMount) {
+    if (newDom&&newDom.componentDidMount) {
         newDom.componentDidMount()
     }
 }
@@ -54,11 +71,11 @@ function createDOM(vdom) {
         } else if (Array.isArray(children)) {
             reconcileChildren(children, dom)
         }
-    }
+    } 
+    vdom.dom = dom // 给虚拟dom身上加个dom属性
     if (ref) {
         ref.current = dom
     }
-    vdom.dom = dom // 给虚拟dom身上加个dom属性
     return dom
 }
 
@@ -67,6 +84,7 @@ function mountMemoComponent(vdom){
     let renderVdom = type.type(props)
     vdom.prevProps = props // 记录之前的props进行对比
     vdom.oldRenderVdom = renderVdom
+    if(!renderVdom) return null
     return createDOM(renderVdom)
 }
 
@@ -77,6 +95,7 @@ function mountProviderComponent(vdom){
     context._currentValue = props.value
     let renderVdom = props.children
     vdom.oldRenderVdom = renderVdom
+    if(!renderVdom) return null
     return createDOM(renderVdom)
 }
 // 挂载constumer
@@ -85,6 +104,7 @@ function mountContextComponent(vdom){
     let context = type._context
     let renderVdom = props.children(context._currentValue)
     vdom.oldRenderVdom = renderVdom
+    if(!renderVdom) return null
     return createDOM(renderVdom)
 }
 
@@ -106,6 +126,7 @@ function mountClassComponent(vdom) {
     let renderVdom = classInstance.render()
     // 在第一次挂载类组件的时候，让类组件的实例上新增一个oldrenderVdom属性
     vdom.oldRenderVdom = classInstance.oldRenderVdom = renderVdom
+    if(!renderVdom) return null
     let dom = createDOM(renderVdom)
     if (classInstance.componentDidMount) {
         // 这里需要把this绑定给实例，否则会出错
@@ -116,15 +137,18 @@ function mountClassComponent(vdom) {
 }
 // 挂载函数组件
 function mountFunctionComponent(vdom) {
+    // debugger
     let { type, props } = vdom // 结构
     let renderVdom = type(props) // 执行type获取虚拟dom
     vdom.oldRenderVdom = renderVdom
+    if(!renderVdom) return null
     return createDOM(renderVdom) // 继续获取真实dom
 }
 
 function mountForwardComponent(vdom) {
     let { type: { render }, ref, props } = vdom
     let renderVdom = render(props, ref)
+    if(!renderVdom) return null
     return createDOM(renderVdom)
 }
 
@@ -287,8 +311,9 @@ function updateFunctionComponent(oldVdom, newVdom) {
     let parentDom = findDom(oldVdom).parentNode
     let { type, props } = newVdom
     let newRenderVdom = type(props)
-    newVdom.oldRenderVdom = newRenderVdom
+    // 这里需要先比较再赋值，不然会报错
     compareTwoVdom(parentDom, oldVdom.oldRenderVdom, newRenderVdom)
+    newVdom.oldRenderVdom = newRenderVdom
 }
 
 // 完整的dom different对比方法
@@ -412,7 +437,7 @@ function unMountVdom(vdom) {
     }
     // 卸载自己
     if (currentDom) {
-        currentDom.parentNode.removeChild(createDOM)
+        currentDom.parentNode.removeChild(currentDom)
     }
 }
 
@@ -429,7 +454,8 @@ export function findDom(vdom) {
 }
 
 const ReactDOM = {
-    render
+    render,
+    createPortal:render
 }
 
 export default ReactDOM

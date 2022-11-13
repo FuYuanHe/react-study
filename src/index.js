@@ -235,10 +235,33 @@ function showTracker(props){
 let ShowComponent = wrapMouseTracker(showTracker)
 // let element = <FunCom name="afu"/>
 
-let element2 = <Counter />
+// let element2 = <Counter />
+
+// 函数组件实现state ==》 useState
+
+function  NewCounter(){
+    let [num,setNum] = React.useState(0)
+    let [num1,setNum1] = React.useState(999)
+    let handleClick = () => {
+        // debugger
+        console.log('hahhaha');
+        setNum(num+1)
+    }
+    let handleClick1 = () => {
+        setNum1(num1+1)
+    }
+    return (
+        <div>
+            <p>{num}</p>
+            <button onClick={handleClick}>点击加一</button>
+            <p>{num1}</p>
+            <button onClick={handleClick1}>点击加一</button>
+        </div>
+    )
+}
 
 // 函数式组件，就是一个普通函数，返回一个组件
 // 接收一个props作为参数，返回一个react元素 
 
 // 将虚拟dom变成真实dom
-ReactDOM.render(<ShowComponent />, document.getElementById('root'))
+ReactDOM.render(<NewCounter />, document.getElementById('root'))
