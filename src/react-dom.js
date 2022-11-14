@@ -13,6 +13,7 @@ function render(vdom, container) {
         compareTwoVdom(container,vdom,vdom)
     }
 }
+// useState方法
 export function useState(initialState){
     hookStates[hookIndex] = hookStates[hookIndex] || initialState
     let currentIndex = hookIndex
@@ -21,6 +22,60 @@ export function useState(initialState){
         scheduleUpdate()
     }
     return [hookStates[hookIndex++],setState]
+}
+
+// useMemo方法：函数组件的更新优化
+/**
+ * 
+ * @param {*} factory 一个函数，返回需要使用的值
+ * @param {*} deps 依赖项数组
+ */
+export function useMemo(factory,deps){
+    if(hookStates[hookIndex]){
+        //第二次走更新的时候能取到值，无论是否取到值，索引都要++
+        let [lastMemo,lastDeps] = hookStates[hookIndex]
+        // 如果依赖项中每一个都能在旧的依赖项中找到
+        let everySame = deps.every((item,index) => item === lastDeps[index] )
+        if(everySame){
+            // 如果依赖项一样，也就是依赖项没有发生改变，则不需要更新
+            hookIndex++
+            return lastMemo
+        }else{
+            // 如果依赖项有改变则触发更新
+            let newMemo = factory()
+            hookStates[hookIndex++] = [newMemo,deps]
+            return newMemo
+        }
+        
+    }else{
+        // 第一次取不到值，走初始加载方法，将值和依赖项加入hookState中，并最终返回
+        let newMemo = factory()
+        hookStates[hookIndex++] = [newMemo,deps]
+        return newMemo
+    }
+}
+// 函数的更新优化useCallBack  无论是否取到值，索引都要++
+export function useCallBack(callback,deps){
+    if(hookStates[hookIndex]){
+        //第二次走更新的时候能取到值
+        let [callback,lastDeps] = hookStates[hookIndex]
+        // 如果依赖项中每一个都能在旧的依赖项中找到
+        let everySame = deps.every((item,index) => item === lastDeps[index] )
+        if(everySame){
+            // 如果依赖项一样，也就是依赖项没有发生改变，则不需要更新
+            hookIndex++
+            return callback
+        }else{
+            // 如果依赖项有改变则触发更新
+            hookStates[hookIndex++] = [newMemo,deps]
+            return callback
+        }
+        
+    }else{
+        // 第一次取不到值，走初始加载方法，将值和依赖项加入hookState中，并最终返回
+        hookStates[hookIndex++] = [callback,deps]
+        return callback
+    }
 }
 
 function mount(vdom, parentDom) {
