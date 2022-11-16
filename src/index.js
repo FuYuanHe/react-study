@@ -239,23 +239,44 @@ let ShowComponent = wrapMouseTracker(showTracker)
 
 // 函数组件实现state ==》 useState
 
-function  NewCounter(){
-    let [num,setNum] = React.useState(0)
-    let [num1,setNum1] = React.useState(999)
-    let handleClick = () => {
-        // debugger
-        console.log('hahhaha');
-        setNum(num+1)
+// function  NewCounter(){
+//     let [num,setNum] = React.useState(0)
+//     let [num1,setNum1] = React.useState(999)
+//     let handleClick = () => {
+//         // debugger
+//         console.log('hahhaha');
+//         setNum(num+1)
+//     }
+//     let handleClick1 = () => {
+//         setNum1(num1+1)
+//     }
+//     return (
+//         <div>
+//             <p>{num}</p>
+//             <button onClick={handleClick}>点击加一</button>
+//             <p>{num1}</p>
+//             <button onClick={handleClick1}>点击加一</button>
+//         </div>
+//     )
+// }
+function reducer(state={number:0},action){
+    switch(action.type){
+        case 'ADD':
+            return  {number:state.number +1}
+        case 'ODD':
+            return  {number:state.number -1}
+        default:
+            return state
     }
-    let handleClick1 = () => {
-        setNum1(num1+1)
-    }
+}
+
+function NewCounter(){
+    const [state,dispatch ] = React.useReducer(reducer,{number:0})
     return (
         <div>
-            <p>{num}</p>
-            <button onClick={handleClick}>点击加一</button>
-            <p>{num1}</p>
-            <button onClick={handleClick1}>点击加一</button>
+            <p>{state.number}</p>
+            <button onClick={()=> dispatch({type:'ADD'})}>增加</button>
+            <button onClick={()=> dispatch({type:'ODD'})}>减少</button>
         </div>
     )
 }

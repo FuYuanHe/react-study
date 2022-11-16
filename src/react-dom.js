@@ -10,18 +10,95 @@ function render(vdom, container) {
     mount(vdom, container)
     scheduleUpdate = () => {
         hookIndex = 0
-        compareTwoVdom(container,vdom,vdom)
+        compareTwoVdom(container, vdom, vdom)
     }
 }
 // useState方法
-export function useState(initialState){
+export function useState(initialState) {
     hookStates[hookIndex] = hookStates[hookIndex] || initialState
     let currentIndex = hookIndex
-    function setState(newState){
+    function setState(newState) {
+        if (typeof newState === 'function') {
+            newState = newState(hookStates[currentIndex])
+        }
         hookStates[currentIndex] = newState
         scheduleUpdate()
     }
-    return [hookStates[hookIndex++],setState]
+    return [hookStates[hookIndex++], setState]
+}
+
+// useEffect
+export function useEffect(callback, deps) {
+    let currentIndex = hookIndex
+    if (hookStates[currentIndex]) {
+        //第二次走更新的时候能取到值
+        let [destory, lastDeps] = hookStates[currentIndex]
+        // 如果依赖项中每一个都能在旧的依赖项中找到
+        let everySame = deps && deps.every((item, index) => item === lastDeps[index])
+        if (everySame) {
+            // 如果依赖项一样，也就是依赖项没有发生改变，则不需要更新
+            hookIndex++
+        } else {
+            // 如果依赖项有改变则触发更新
+            destory && destory()
+            setTimeout(() => {
+                hookStates[currentIndex++] = [callback(), deps]
+                hookIndex++
+            })
+        }
+
+    } else {
+        // 第一次取不到值，走初始加载方法，将值和依赖项加入hookState中，并最终返回
+        setTimeout(() => {
+            hookStates[currentIndex++] = [callback(), deps]
+            hookIndex++
+        })
+    }
+}
+// useLayoutEffect 是微任务的，useEffect是宏任务
+export function useLayoutEffect() {
+    let currentIndex = hookIndex
+    if (hookStates[currentIndex]) {
+        //第二次走更新的时候能取到值
+        let [destory, lastDeps] = hookStates[currentIndex]
+        // 如果依赖项中每一个都能在旧的依赖项中找到
+        let everySame = deps && deps.every((item, index) => item === lastDeps[index])
+        if (everySame) {
+            // 如果依赖项一样，也就是依赖项没有发生改变，则不需要更新
+            hookIndex++
+        } else {
+            // 如果依赖项有改变则触发更新
+            destory && destory()
+            queueMicrotask(() => {
+                hookStates[currentIndex++] = [callback(), deps]
+                hookIndex++
+            })
+        }
+
+    } else {
+        // 第一次取不到值，走初始加载方法，将值和依赖项加入hookState中，并最终返回
+        queueMicrotask(() => {
+            hookStates[currentIndex++] = [callback(), deps]
+            hookIndex++
+        })
+    }
+}
+// useReducer比useState要更先进
+// useState = useReducer(null,initialState)
+export function useReducer(reducer, initialState) {
+    hookStates[hookIndex] = hookStates[hookIndex] || initialState
+    let currentIndex = hookIndex
+    function dispatch(action) {
+        // 这里需要判断一下action的类型
+        if (typeof action === 'function') {
+            action = action(hookStates[currentIndex])
+        }
+        // debugger
+        // reducer()需要使用currentIndex
+        hookStates[currentIndex] = reducer ? reducer(hookStates[currentIndex], action) : action
+        scheduleUpdate()
+    }
+    return [hookStates[hookIndex++], dispatch]
 }
 
 // useMemo方法：函数组件的更新优化
@@ -30,63 +107,75 @@ export function useState(initialState){
  * @param {*} factory 一个函数，返回需要使用的值
  * @param {*} deps 依赖项数组
  */
-export function useMemo(factory,deps){
-    if(hookStates[hookIndex]){
+export function useMemo(factory, deps) {
+    if (hookStates[hookIndex]) {
         //第二次走更新的时候能取到值，无论是否取到值，索引都要++
-        let [lastMemo,lastDeps] = hookStates[hookIndex]
+        let [lastMemo, lastDeps] = hookStates[hookIndex]
         // 如果依赖项中每一个都能在旧的依赖项中找到
-        let everySame = deps.every((item,index) => item === lastDeps[index] )
-        if(everySame){
+        let everySame = deps.every((item, index) => item === lastDeps[index])
+        if (everySame) {
             // 如果依赖项一样，也就是依赖项没有发生改变，则不需要更新
             hookIndex++
             return lastMemo
-        }else{
+        } else {
             // 如果依赖项有改变则触发更新
             let newMemo = factory()
-            hookStates[hookIndex++] = [newMemo,deps]
+            hookStates[hookIndex++] = [newMemo, deps]
             return newMemo
         }
-        
-    }else{
+
+    } else {
         // 第一次取不到值，走初始加载方法，将值和依赖项加入hookState中，并最终返回
         let newMemo = factory()
-        hookStates[hookIndex++] = [newMemo,deps]
+        hookStates[hookIndex++] = [newMemo, deps]
         return newMemo
     }
 }
 // 函数的更新优化useCallBack  无论是否取到值，索引都要++
-export function useCallBack(callback,deps){
-    if(hookStates[hookIndex]){
+export function useCallBack(callback, deps) {
+    if (hookStates[hookIndex]) {
         //第二次走更新的时候能取到值
-        let [callback,lastDeps] = hookStates[hookIndex]
+        let [callback, lastDeps] = hookStates[hookIndex]
         // 如果依赖项中每一个都能在旧的依赖项中找到
-        let everySame = deps.every((item,index) => item === lastDeps[index] )
-        if(everySame){
+        let everySame = deps.every((item, index) => item === lastDeps[index])
+        if (everySame) {
             // 如果依赖项一样，也就是依赖项没有发生改变，则不需要更新
             hookIndex++
             return callback
-        }else{
+        } else {
             // 如果依赖项有改变则触发更新
-            hookStates[hookIndex++] = [newMemo,deps]
+            hookStates[hookIndex++] = [callback, deps]
             return callback
         }
-        
-    }else{
+
+    } else {
         // 第一次取不到值，走初始加载方法，将值和依赖项加入hookState中，并最终返回
-        hookStates[hookIndex++] = [callback,deps]
+        hookStates[hookIndex++] = [callback, deps]
         return callback
     }
 }
 
+// useContext
+export function useContext(context) {
+    return context._currentValue
+}
+export function useRef(){
+    return {current:null}
+}
+export function useImperativeHandle(ref,factory){
+    ref.current = factory()
+}
+
+
 function mount(vdom, parentDom) {
     // 返回真实dom
     let newDom = createDOM(vdom)
-    console.log('newdom',newDom);
+    // console.log('newdom',newDom);
     // console.log('newdom',newDom);
     // 将真实dom插入容器
-    if(newDom) parentDom.appendChild(newDom)
+    if (newDom) parentDom.appendChild(newDom)
     // 将组件挂载的钩子放在这里
-    if (newDom&&newDom.componentDidMount) {
+    if (newDom && newDom.componentDidMount) {
         newDom.componentDidMount()
     }
 }
@@ -97,7 +186,7 @@ function createDOM(vdom) {
     let dom
     if (type && type.$$typeof === REACT_FORWARD_REF) {
         return mountForwardComponent(vdom)
-    }else if(type.$$typeof === REACT_MEMO){
+    } else if (type.$$typeof === REACT_MEMO) {
         return mountMemoComponent(vdom)
     } else if (type.$$typeof === REACT_CONTEXT) {
         return mountContextComponent(vdom)
@@ -126,7 +215,7 @@ function createDOM(vdom) {
         } else if (Array.isArray(children)) {
             reconcileChildren(children, dom)
         }
-    } 
+    }
     vdom.dom = dom // 给虚拟dom身上加个dom属性
     if (ref) {
         ref.current = dom
@@ -134,32 +223,32 @@ function createDOM(vdom) {
     return dom
 }
 
-function mountMemoComponent(vdom){
-    let {type,props} = vdom
+function mountMemoComponent(vdom) {
+    let { type, props } = vdom
     let renderVdom = type.type(props)
     vdom.prevProps = props // 记录之前的props进行对比
     vdom.oldRenderVdom = renderVdom
-    if(!renderVdom) return null
+    if (!renderVdom) return null
     return createDOM(renderVdom)
 }
 
 // 挂载provider
-function mountProviderComponent(vdom){
-    const {type,props} = vdom
+function mountProviderComponent(vdom) {
+    const { type, props } = vdom
     let context = type._context
     context._currentValue = props.value
     let renderVdom = props.children
     vdom.oldRenderVdom = renderVdom
-    if(!renderVdom) return null
+    if (!renderVdom) return null
     return createDOM(renderVdom)
 }
 // 挂载constumer
-function mountContextComponent(vdom){
-    const {type,props} = vdom
+function mountContextComponent(vdom) {
+    const { type, props } = vdom
     let context = type._context
     let renderVdom = props.children(context._currentValue)
     vdom.oldRenderVdom = renderVdom
-    if(!renderVdom) return null
+    if (!renderVdom) return null
     return createDOM(renderVdom)
 }
 
@@ -169,7 +258,7 @@ function mountClassComponent(vdom) {
     let { type, props, ref } = vdom
     let classInstance = new type(props)
     // 如果类组件上有contextType属性,给实例身上加个context属性，然后附上值
-    if(type.contextType){
+    if (type.contextType) {
         classInstance.context = type.contextType._currentValue
     }
     if (ref) ref.current = classInstance
@@ -181,7 +270,7 @@ function mountClassComponent(vdom) {
     let renderVdom = classInstance.render()
     // 在第一次挂载类组件的时候，让类组件的实例上新增一个oldrenderVdom属性
     vdom.oldRenderVdom = classInstance.oldRenderVdom = renderVdom
-    if(!renderVdom) return null
+    if (!renderVdom) return null
     let dom = createDOM(renderVdom)
     if (classInstance.componentDidMount) {
         // 这里需要把this绑定给实例，否则会出错
@@ -196,14 +285,14 @@ function mountFunctionComponent(vdom) {
     let { type, props } = vdom // 结构
     let renderVdom = type(props) // 执行type获取虚拟dom
     vdom.oldRenderVdom = renderVdom
-    if(!renderVdom) return null
+    if (!renderVdom) return null
     return createDOM(renderVdom) // 继续获取真实dom
 }
 
 function mountForwardComponent(vdom) {
     let { type: { render }, ref, props } = vdom
     let renderVdom = render(props, ref)
-    if(!renderVdom) return null
+    if (!renderVdom) return null
     return createDOM(renderVdom)
 }
 
@@ -283,13 +372,13 @@ export function compareTwoVdom(parentDom, oldVdom, newVdom, nextDom) {
 // 深度domdiff 方法
 function updateElement(oldVdom, newVdom) {
     // 如果是文本节点
-    if(oldVdom.type.$$typeof === REACT_MEMO){
-        updateMemoComponent(oldVdom,newVdom)
-    }else if(oldVdom.type.$$typeof === REACT_CONTEXT){
-        updateContextComponent(oldVdom,newVdom)
-    }else if(oldVdom.type.$$typeof === REACT_PROVIDER) {
-        updateProviderComponent(oldVdom,newVdom)
-    }else if (oldVdom.type === REACT_TEXT) {
+    if (oldVdom.type.$$typeof === REACT_MEMO) {
+        updateMemoComponent(oldVdom, newVdom)
+    } else if (oldVdom.type.$$typeof === REACT_CONTEXT) {
+        updateContextComponent(oldVdom, newVdom)
+    } else if (oldVdom.type.$$typeof === REACT_PROVIDER) {
+        updateProviderComponent(oldVdom, newVdom)
+    } else if (oldVdom.type === REACT_TEXT) {
         // 拿到老的真实dom，赋值给新的虚拟dom的dom属性，并将新的真实dom的值改为要修改的值
         let currentDom = newVdom.dom = findDom(oldVdom)
         currentDom.textContent = newVdom.props.content
@@ -310,19 +399,19 @@ function updateElement(oldVdom, newVdom) {
 }
 
 // 更新reactmemo
-function updateMemoComponent(oldVdom,newVdom){
-    let {type,prevProps} = oldVdom
+function updateMemoComponent(oldVdom, newVdom) {
+    let { type, prevProps } = oldVdom
     // 对比新旧虚拟dom的props属性，使用浅对比函数，shallowEqual
-    if(!type.compare(prevProps,newVdom.props)){
+    if (!type.compare(prevProps, newVdom.props)) {
         // 新旧props不一样，走更新逻辑
         let oldDom = findDom(oldVdom)
         let parentDom = oldDom.parentNode
-        let {type,props} = newVdom
+        let { type, props } = newVdom
         let renderVdom = type.type(props)
-        compareTwoVdom(parentDom,oldVdom.oldRenderVdom,renderVdom)
+        compareTwoVdom(parentDom, oldVdom.oldRenderVdom, renderVdom)
         newVdom.oldRenderVdom = renderVdom
         newVdom.prevProps = props
-    }else{
+    } else {
         // 不更新，直接使用之前的虚拟dom
         newVdom.prevProps = prevProps
         newVdom.oldRenderVdom = oldVdom.oldRenderVdom
@@ -331,25 +420,25 @@ function updateMemoComponent(oldVdom,newVdom){
 }
 
 // 更新context
-function updateContextComponent(oldVdom,newVdom){
+function updateContextComponent(oldVdom, newVdom) {
     let oldDom = findDom(oldVdom) // 老的真实dom
     let parentDom = oldDom.parentNode
-    let {type,props} = newVdom
+    let { type, props } = newVdom
     let context = type._context
     let renderVdom = props.children(context._currentValue)
-    compareTwoVdom(parentDom,oldVdom.oldRenderVdom,renderVdom)
+    compareTwoVdom(parentDom, oldVdom.oldRenderVdom, renderVdom)
     newVdom.oldRenderVdom = renderVdom
 }
 
 // 更新provider
-function updateProviderComponent(oldVdom,newVdom){
+function updateProviderComponent(oldVdom, newVdom) {
     let oldDom = findDom(oldVdom)
     let parentDom = oldDom.parentNode
-    let {type,props} = newVdom
+    let { type, props } = newVdom
     let context = type._context
     context._currentValue = props.value
     let renderVdom = props.children
-    compareTwoVdom(parentDom,oldVdom.oldRenderVdom,renderVdom)
+    compareTwoVdom(parentDom, oldVdom.oldRenderVdom, renderVdom)
     newVdom.oldRenderVdom = renderVdom
 }
 
@@ -510,7 +599,7 @@ export function findDom(vdom) {
 
 const ReactDOM = {
     render,
-    createPortal:render
+    createPortal: render
 }
 
 export default ReactDOM
