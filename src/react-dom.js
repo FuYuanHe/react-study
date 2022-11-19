@@ -56,7 +56,7 @@ export function useEffect(callback, deps) {
     }
 }
 // useLayoutEffect 是微任务的，useEffect是宏任务
-export function useLayoutEffect() {
+export function useLayoutEffect(callback,deps) {
     let currentIndex = hookIndex
     if (hookStates[currentIndex]) {
         //第二次走更新的时候能取到值
