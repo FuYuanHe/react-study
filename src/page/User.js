@@ -5,7 +5,7 @@ export default class User extends Component {
     return (
       <>
        <div>User</div>
-       <button onClick={()=>this.props.history.goForward()}>点我跳转</button>  
+       <button onClick={()=>this.props.history.goFarword()}>点我跳转</button>  
       </>
     )
   }
